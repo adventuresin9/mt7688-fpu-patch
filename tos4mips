@@ -1,0 +1,2 @@
+#!/bin/rc
+bind -b /usr/theowner/mipstos /sys/include
