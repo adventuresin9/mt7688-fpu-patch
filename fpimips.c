@@ -58,6 +58,15 @@
 #define REGD(ul) (((ul) >>  6) & REGMASK)	/* destination register */
 #define FUNC(ul) ((ul) & MASK(6))
 
+//#define FUNC(ul)	 ((ul) >> 26)
+//#define REGMASK MASK(5)				/* mask for a register number */
+//#define REGD(ul)	 (((ul) >> 21) & REGMASK)	/* data type */
+//#define REGS(ul) (((ul) >> 16) & REGMASK)	/* source2 register */
+//#define REGT(ul) (((ul) >> 11) & REGMASK)	/* source1 register */
+//#define FMT(ul) (((ul) >>  7) & REGMASK)	/* destination register */
+//#define OP(ul) ((ul) & MASK(6))
+
+
 enum {
 	Dbgbasic = 1<<0,	/* base debugging: ops, except'ns */
 	Dbgmoves = 1<<1,	/* not very exciting usually */
@@ -201,6 +210,7 @@ static char *prednames[] = {
 [15]	"NGT",
 };
 
+//ad9
 int fpemudebug = 0;			/* settable via /dev/archctl */
 
 static ulong dummyr0;
@@ -322,36 +332,37 @@ _intpr(Internal *i, int reg, int fmt, FPsave *ufp)
 	delay(75);
 }
 
+//ad9 swapped the l and h
 static void
 dreg2dbl(Double *dp, int reg, FPsave *ufp)
 {
 	reg &= ~1;
-	dp->l = FREG(ufp, reg);
-	dp->h = FREG(ufp, reg+1);
+	dp->h = FREG(ufp, reg);
+	dp->l = FREG(ufp, reg+1);
 }
 
 static void
 dbl2dreg(int reg, Double *dp, FPsave *ufp)
 {
 	reg &= ~1;
-	FREG(ufp, reg)   = dp->l;
-	FREG(ufp, reg+1) = dp->h;
+	FREG(ufp, reg)   = dp->h;
+	FREG(ufp, reg+1) = dp->l;
 }
 
 static void
 vreg2dbl(Double *dp, int reg, FPsave *ufp)
 {
 	reg &= ~1;
-	dp->l = FREG(ufp, reg+1);
-	dp->h = FREG(ufp, reg);
+	dp->h = FREG(ufp, reg+1);
+	dp->l = FREG(ufp, reg);
 }
 
 static void
 dbl2vreg(int reg, Double *dp, FPsave *ufp)
 {
 	reg &= ~1;
-	FREG(ufp, reg+1) = dp->l;
-	FREG(ufp, reg)   = dp->h;
+	FREG(ufp, reg+1) = dp->h;
+	FREG(ufp, reg)   = dp->l;
 }
 
 /* convert fmt (rm) to double (rd) */
@@ -531,8 +542,11 @@ fld(int d, ulong ea, int n, FPsave *ufp)
 	else if (n == 8){
 		d &= ~1;
 		/* NB: we swap order of the words */
-		memmove(&FREG(ufp, d), (void *)(ea+4), 4);
-		memmove(&FREG(ufp, d+1), (void *)ea, 4);
+//		memmove(&FREG(ufp, d), (void *)(ea+4), 4);
+//		memmove(&FREG(ufp, d+1), (void *)ea, 4);
+//ad9
+		memmove(&FREG(ufp, d), (void *)ea, 4);
+		memmove(&FREG(ufp, d+1), (void *)(ea+4), 4);
 	} else
 		panic("fld: n (%d) not 4 nor 8", n);
 }
@@ -547,8 +561,11 @@ fst(ulong ea, int s, int n, FPsave *ufp)
 	else if (n == 8){
 		s &= ~1;
 		/* NB: we swap order of the words */
-		memmove((void *)(ea+4), &FREG(ufp, s), 4);
-		memmove((void *)ea, &FREG(ufp, s+1), 4);
+//		memmove((void *)(ea+4), &FREG(ufp, s), 4);
+//		memmove((void *)ea, &FREG(ufp, s+1), 4);
+//ad9
+		memmove((void *)ea, &FREG(ufp, s), 4);
+		memmove((void *)(ea+4), &FREG(ufp, s+1), 4);
 	} else
 		panic("fst: n (%d) not 4 nor 8", n);
 }
@@ -594,7 +611,7 @@ ldst(ulong op, Ureg *ur, FPsave *ufp)
 	off = op;
 	ea = REG(ur, rn) + off;
 	rd = REGT(op);
-//iprint("fpemu: ld/st (F%d)=%#lux + %d => ea %#lux\n", rn, REG(ur, rn), off, ea);
+//iprint("fpemu: ld/st (F%d)=%#lux + %d => ea %#lux\n", rn, REG(ur, rn), off, ea);  //ad9
 
 	size = 4;
 	if (o == LDC1 || o == SDC1)
@@ -630,7 +647,7 @@ cop1mov(Instr *ip)
 	rt = ip->rn;		/* R(t) aka rn */
 	ur = ip->ur;
 	ufp = ip->ufp;
-//iprint("fpemu: cop1 prob ld/st (R%d)=%#lux FREG%d\n", rn, REG(ip->ur, rn), rm);
+//iprint("fpemu: cop1 prob ld/st (R%d)=%#lux FREG%d\n", rt, REG(ip->ur, rt), fs);  //ad9
 
 	/* MIPS fp register pairs are in little-endian order: low word first */
 	switch (ip->fmt) {
@@ -1097,6 +1114,9 @@ static void
 cop1decode(Instr *ip, ulong iw, ulong pc, Ureg *ur, FPsave *ufp,
 	Internal *imp, Internal *inp)
 {
+//ad9
+//	iprint("|%uX", iw);
+
 	ip->iw = iw;
 	ip->pc = pc;
 	ip->ur = ur;
